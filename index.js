@@ -5,6 +5,7 @@ import { MongoClient } from 'mongodb';
 const app = express()
 const PORT = 8000
 app.use(cors());
+app.use(express.json())
 
 
 const client = new MongoClient(process.env.MONGO_URI);
@@ -19,15 +20,36 @@ export async function connectToMongoDB() {
 }
 const mongoCLient=await connectToMongoDB();
 const db=mongoCLient.db("StudioSpace")
-app.post("/addStudio",(req,res)=>{
-	const data=req.body
-	console.log(data)
-	res.send({msg:"API is working"})
-})
+const newStudioCollection=db.collection("newStudio")
+app.post("/addStudio", async (req, res) => {
+  const studio = req.body;
+
+  const alreadyAdded = await newStudioCollection.findOne({
+    ownerEmail: studio.ownerEmail,
+  });
+
+  if (alreadyAdded) {
+    return res
+      .status(409)
+      .send({ message: "You have already added a studio with this email." });
+  }
+
+  studio.createdAt = new Date();
+  const result = await studioCollection.insertOne(studio);
+  res.send(result);
+});
 
 
 
 
+app.get("/getStudio", async (req, res) => {
+  const result = await newStudioCollection
+    .find()
+    .sort({ _id: -1 }) // newest first
+    .limit(6)
+    .toArray();
+  res.send(result);
+});
 
 
 
