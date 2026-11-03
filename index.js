@@ -1,7 +1,7 @@
 import express from "express"
 import cors from "cors"
 import "dotenv/config";
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 const app = express()
 const PORT = 8000
 app.use(cors());
@@ -35,7 +35,7 @@ app.post("/addStudio", async (req, res) => {
   }
 
   studio.createdAt = new Date();
-  const result = await studioCollection.insertOne(studio);
+  const result = await newStudioCollection.insertOne(studio);
   res.send(result);
 });
 
@@ -50,7 +50,12 @@ app.get("/getStudio", async (req, res) => {
     .toArray();
   res.send(result);
 });
-
+app.get("/getStudio/:id",async(req,res)=>{
+	const {id}=req.params
+	const result=await newStudioCollection.findOne({_id:new ObjectId(id)})
+	console.log(id)
+	res.send(result)
+})
 
 
 
