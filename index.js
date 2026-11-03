@@ -21,6 +21,7 @@ export async function connectToMongoDB() {
 const mongoCLient=await connectToMongoDB();
 const db=mongoCLient.db("StudioSpace")
 const newStudioCollection=db.collection("newStudio")
+const bookingCollection=db.collection("BookedItems")
 app.post("/addStudio", async (req, res) => {
   const studio = req.body;
 
@@ -57,11 +58,26 @@ app.get("/getStudio/:id",async(req,res)=>{
 	res.send(result)
 })
 
+app.get("/getStudios",async (req,res)=>{
+	const result=await newStudioCollection.find().toArray()
+	res.send(result)
+})
+app.post('/booked',async (req,res)=>{
+	const data=req.body
+	const result=await bookingCollection.insertOne(data)
+	res.send(result)
+})
+app.get("/bookedStudio/:email", async(req,res)=>{
+	const {email}=req.params
+	const result=await bookingCollection.find({"user.email":email}).toArray()
+	res.send(result)
+})
 
-
-
-
-
+app.delete("/bookings/:id", async (req,res)=>{
+	const {id}=req.params
+	const result=await bookingCollection.deleteOne({_id:new ObjectId(id)})
+	res.send(result)
+})
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
 })
