@@ -78,6 +78,47 @@ app.delete("/bookings/:id", async (req,res)=>{
 	const result=await bookingCollection.deleteOne({_id:new ObjectId(id)})
 	res.send(result)
 })
+
+app.patch("/editStudio/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    const result = await bookingCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          "booking.date": data.date,
+          "booking.startTime": data.startTime,
+          "booking.duration": Number(data.duration),
+          "booking.totalPrice": Number(data.totalPrice),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send({
+        message: "Booking not found",
+      });
+    }
+
+    res.send({
+      message: "Booking updated successfully",
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: "Failed to update booking",
+    });
+  }
+});
+
+app.get("/myStudioes/:email",async(req,res)=>{
+	const {email}=req.params
+	const result=await newStudioCollection.find({ownerEmail:email}).toArray()
+	res.send(result)
+})
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`)
 })
