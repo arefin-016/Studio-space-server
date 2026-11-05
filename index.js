@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 import { MongoClient, ObjectId } from "mongodb";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const app = express();
 const PORT = 8000;
@@ -35,9 +36,7 @@ app.delete('/studios/:email',async(req,res)=>{
 	res.send(result)
 })
 
-// Owner updates their own added studio — matched by owner email, so a
-// request can only ever touch the studio belonging to that email.
-app.patch("/studios/:email", async (req, res) => {
+/app.patch("/studios/:email", async (req, res) => {
   try {
     const { email } = req.params;
     const data = { ...req.body };
@@ -137,9 +136,49 @@ app.get("/getStudios", async (req, res) => {
     res.status(500).send({ message: "Failed to fetch studios" });
   }
 });
+const verifyToken=async(req,res,next)=>{
 
-app.get("/myStudioes/:email", async (req, res) => {
-  try {
+
+	const authHeaders=req.headers.authorization
+	console.log(authHeaders)
+	if(!authHeaders){
+		return res.status(401).send({msg:"Unauthorized"})
+	}
+	const token=authHeaders.split(" ")[1]
+	console.log(token)
+	if(!token){
+		return res.status(401).send({msg:"Unauthorized"})
+	}
+	const JWKS=createRemoteJWKSet(new URL('http://localhost:3000/api/auth/jwks'))
+
+
+	try {
+		const {payload}=await jwtVerify(token,JWKS)
+	console.log(payload,"payload")
+	next()
+
+	} catch (error) {
+		res.status(500).send({msg:'Internal Server Error'})
+
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+app.get("/myStudioes/:email",verifyToken
+ ,async (req, res) => {
+
+
     const { email } = req.params;
 
     const result = await newStudioCollection
@@ -147,9 +186,7 @@ app.get("/myStudioes/:email", async (req, res) => {
       .toArray();
 
     res.send(result);
-  } catch (error) {
-    res.status(500).send({ message: "Failed to fetch owner studios" });
-  }
+
 });
 
 app.post("/booked", async (req, res) => {
@@ -199,7 +236,7 @@ app.get('/studios/category/:category', async (req, res) => {
 });
 
 
-app.get("/bookedStudio/:email", async (req, res) => {
+app.get("/bookedStudio/:email",verifyToken, async (req, res) => {
   try {
     const { email } = req.params;
 
@@ -393,7 +430,7 @@ app.delete("/bookings/:id", async (req, res) => {
   }
 });
 
-app.patch("/editStudio/:id", async (req, res) => {
+app.patch("/editStudio/:id",verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
